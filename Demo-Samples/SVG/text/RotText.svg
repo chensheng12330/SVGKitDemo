@@ -1,0 +1,26 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="400px" height="300px" viewBox="0 0 400 300"
+     xmlns="http://www.w3.org/2000/svg" version="1.1">
+  <desc>Example text01 - 'Hello, out there' in blue</desc>
+
+<g id="Rum">
+
+	<text transform="matrix(0 -1 1 0 100 100)" style="font-family:'MyriadPro-Regular'; font-size:9.2713;">Sequence <tspan style="fill:#FF0000; font-size:20">Skyway</tspan></text>
+</g>
+
+<!--
+  <text transform="matrix(0 -1 1 0 100 100)" 
+        font-family="Verdana" font-size="55" fill="blue" >
+    xyY
+  </text>
+-->
+  <rect x="100" y="100" width="10" height="10"
+        fill="green" stroke="blue" stroke-width="2" />
+
+  <!-- Show outline of canvas using 'rect' element -->
+  <rect x="1" y="1" width="998" height="298"
+        fill="none" stroke="blue" stroke-width="2" />
+</svg>
+
