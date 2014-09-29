@@ -316,8 +316,10 @@ void InitNodeMap( char charMap[][WIDE], OpenList * openlist)
 			m_node[i][j].location_y = i;
 			m_node[i][j].parent = NULL;
 
+            //外围墙设置
             if (i==_gFactLENGTH || j==_gFactWIDE) {
                 m_node[i][j].flag = WALL;
+                charMap[i][j] = 'x';
                 continue;
             }
             

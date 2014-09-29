@@ -25,6 +25,9 @@
 
 @property (nonatomic, retain) NSMutableArray *arTapLayers;
 
+
+@property (nonatomic, retain) NSMutableArray *nodeRectMap;
+
 - (void)loadResource:(NSString *)name;
 
 @property (nonatomic, assign) NSInteger eatTime;
@@ -86,6 +89,9 @@
     [_svgProcInfo release];
     [_lbNeedTime release];
 
+    
+    self.nodeRectMap = nil;
+    
 	[super dealloc];
 }
 
@@ -797,52 +803,206 @@
 
 //以 5*5 个像素点为一个瓦片单位
 
-#define TilingSize 5
+#define TilingSize 10
+
+//默认设置，需根据画布大小来确定
+int AST_WIDE   =  100; //单位->个数
+int AST_LENGTH =  100;
+
+char nodeMap[LENGTH][WIDE]; //[1][2]
+
 
 //初使化瓦片阵列
 -(void) initSVGToTilingArray
 {
     //画布大小
+    float canvasWidth  = self.contentView.layer.frame.size.width;
+    float canvasHeight = self.contentView.layer.frame.size.height;
+    
+    //瓦片Size
+    float nTilingWidth = TilingSize;
+    float nTilingHeight= TilingSize;
+    
+    
+    //处理数组
+    AST_WIDE  = canvasWidth/nTilingWidth+1;
+    AST_LENGTH= canvasHeight/nTilingHeight+1;
+    
+    //初使化数组
+    self.nodeRectMap = [[[NSMutableArray alloc] init] autorelease];
+    
+    for (int i=0; i<AST_LENGTH; i++) {
+        
+        //Layer Rect Map
+        NSMutableArray *xRowAry = [[NSMutableArray alloc] init];
+        
+        for (int j=0; j<AST_WIDE; j++) {
+            nodeMap[i][j] = '.'; //全部为可行区域
+            
+            CGRect nodeRect = CGRectMake((j*nTilingWidth),(i*nTilingHeight), nTilingWidth, nTilingHeight);
+            
+            [xRowAry addObject:NSStringFromCGRect(nodeRect)];
+        }
+        
+        [self.nodeRectMap addObject:xRowAry];
+        [xRowAry release];
+    }
+    
+     NSLog(@"%@", self.nodeRectMap);
+    
+    
+    //获取所有展位图形
+    NSArray *allRectLayer = [self.svgTool getAllRectLayer];
+    
+    // 处理所有展位视图,将其转换成墙模式
+    for (CALayer *subLayer in allRectLayer) {
+
+        //怪物空间
+        float moW = subLayer.frame.size.width;
+        float moH = subLayer.frame.size.height;
+        float moOrX = subLayer.frame.origin.x;
+        float moOrY = subLayer.frame.origin.y;
+        
+        float moButX = moOrX+moW;
+        float moButY = moOrY+moH;
+        
+        //网格用整形，减少CPU开支
+        //墙下标值
+        int lbx,lby; lbx=lby=0;
+        
+        for (float i=(moOrX); ; i+=nTilingWidth) {
+            
+            //特殊判断 【半部分在矩形内】
+            if (i>=moButX && (i-nTilingWidth)>moButX) {  break; }
+            
+            //执行X下标计算
+            lbx = i/nTilingWidth;
+            
+            // 抛弃多余
+            if (moButX< ((lbx)*nTilingWidth)) {  break; }
+            
+            //数组越界，放弃
+            if (lbx>=AST_WIDE || lbx<0) { continue; }
+            
+            for (float j=(moOrY); ; j+=nTilingHeight) {
+                
+                if (j>moButY && (j-nTilingHeight)>moButY) {  break; }
+                
+                //执行Y下标计算
+                lby = j/nTilingHeight;
+                
+                // 抛弃多余
+                if (moButY< ((lby)*nTilingHeight)) {
+                    break;
+                }
+                
+                if (lby>=AST_LENGTH || lby<0) { //数组越界，放弃
+                    continue;
+                }
+                
+                //设置当前为墙属性
+                nodeMap[lby][lbx] = 'x';
+                
+                /*
+                CALayer *mainPath = [CALayer layer];
+                
+                CGRect rect = CGRectFromString(self.nodeRectMap[lby][lbx]);
+                
+                mainPath.frame = rect;//CGRectMake(rect.origin.x, rect.origin.y, <#CGFloat width#>, <#CGFloat height#>);
+                mainPath.backgroundColor = [UIColor clearColor].CGColor;
+                mainPath.borderWidth = 0.5;
+                mainPath.borderColor = [UIColor redColor].CGColor;
+                mainPath.transform          = subLayer.transform;
+                mainPath.contentsScale      = subLayer.contentsScale;
+                mainPath.rasterizationScale = subLayer.rasterizationScale;
+                [self.contentView.layer addSublayer:mainPath];
+                 */
+            }
+        }
+    }
+    
+    //[self.contentView setNeedsDisplay];
+    return;
+}
+
+/*!
+ 在svg上显示路径线路
+ @param   <#par#> <#info#>
+ @return  <#return#>
+ */
+-(void) displayPathOnLayerForNodeRects:(NSArray*) nodeRects
+{
+    
+    //画布大小
     float canvasWidth  = self.contentView.frame.size.width;
     float canvasHeight = self.contentView.frame.size.height;
     
     //获取所有展位图形
-    NSArray *allRectLayer = [self.svgTool getAllRectLayer];
-    for (CALayer *subLayer in allRectLayer) {
+    
+    
+    //画路径计算
+    UIBezierPath *findPath = [UIBezierPath bezierPath];
+    
+    //从终点画到起点
+    
+    for (int i=0; i< nodeRects.count; i++) {
         
-        //NSLog(@"tagName: %@  Rect:%@", subLayer.name,@"");
-        NSLog(@"%@",NSStringFromCGRect(subLayer.frame));
+        NSString *stringRect = nodeRects[i];
         
-        subLayer.backgroundColor = [UIColor greenColor].CGColor;
+        
+        CGRect pointRect = CGRectFromString(stringRect);
+        //CGRectMake(, , CGRectGetWidth(pointRect), CGRectGetHeight(pointRect))
+        
+        CGPoint center = CGPointMake(CGRectGetMidX(pointRect), CGRectGetMidY(pointRect));
+        
+        
+        if (i==0) {
+            [findPath moveToPoint:center];
+        }
+        else{
+            [findPath addLineToPoint:center];
+        }
     }
     
-    CGPoint p1 = CGPointMake(1, 1);
-    CGPoint p2 = CGPointMake(10, 10);
-    CGPoint p3 = CGPointMake(40, 20);
-    CGPoint p4 = CGPointMake(30, 90);
-    CGPoint p5 = CGPointMake(150, 20);
-    CGPoint p6 = CGPointMake(200, 200);
-    CGPoint p7 = CGPointMake(900, 900);
+    /* 测试点2
+     CGPoint p1 = CGPointMake(1, 1);
+     CGPoint p2 = CGPointMake(10, 10);
+     CGPoint p3 = CGPointMake(40, 20);
+     CGPoint p4 = CGPointMake(30, 90);
+     CGPoint p5 = CGPointMake(150, 20);
+     CGPoint p6 = CGPointMake(200, 200);
+     CGPoint p7 = CGPointMake(900, 900);
+     
+     
+     [findPath moveToPoint:p1];
+     [findPath addLineToPoint:p2];
+     [findPath addLineToPoint:p3];
+     [findPath addLineToPoint:p4];
+     [findPath addLineToPoint:p5];
+     [findPath addLineToPoint:p6];
+     [findPath addLineToPoint:p7];
+     */
     
-    UIBezierPath *findPath = [UIBezierPath bezierPath];
-    [findPath moveToPoint:p1];
-    [findPath addLineToPoint:p2];
-    [findPath addLineToPoint:p3];
-    [findPath addLineToPoint:p4];
-    [findPath addLineToPoint:p5];
-    [findPath addLineToPoint:p6];
-    [findPath addLineToPoint:p7];
+    //测试点3
+    NSArray *allRectLayer = [self.svgTool getAllRectLayer];
+    CALayer *subLayer = allRectLayer[0]; //self.contentView.layer;//
+    
+    //findPath = [UIBezierPath bezierPathWithRect:self.contentView.layer.frame];
+    //[findPath moveToPoint:subLayer.frame.origin];
+    //findPath moveToPoint:subLayer.
+    
+    
     //[findPath closePath];
     
     //set the render colors
     //[[UIColor blackColor] setStroke];
-   //[[UIColor redColor] setFill];
+    //[[UIColor redColor] setFill];
     
     //findPath.lineWidth = 4;
     //[findPath fill];
     //[findPath stroke];
     
-   CAShapeLayer *mainPath = [CAShapeLayer layer];
+    CAShapeLayer *mainPath = [CAShapeLayer layer];
     [mainPath setFrame:self.contentView.layer.frame];
     
     mainPath.path = findPath.CGPath;
@@ -850,9 +1010,14 @@
     mainPath.lineWidth =  5;
     mainPath.strokeColor = [UIColor redColor].CGColor;
     
-    mainPath.transform = self.contentView.layer.transform;
-    mainPath.rasterizationScale = self.contentView.layer.rasterizationScale;
-    mainPath.contentsScale = self.contentView.layer.contentsScale;
+    
+    //属性copy
+    CALayer *beLayer = subLayer;
+    
+    mainPath.transform          = beLayer.transform;
+    mainPath.contentsScale      = beLayer.contentsScale;
+    mainPath.rasterizationScale = beLayer.rasterizationScale;
+    
     
     [self.contentView.layer addSublayer:mainPath];
     
@@ -860,13 +1025,209 @@
     NSLog(@"canvasFrame: %@",NSStringFromCGRect(self.contentView.frame));
     
     [self.contentView setNeedsDisplay];
-    return;
+}
+
+// 获取可用方向瓦片
+/*
+ 1  2   3
+ 4  C   6
+ 7  8   9
+ 
+ 取 2，6，8，4 四个方向点
+ @par layerRect  SVG图形点标识Layer层
+ 返回值 CGPoint for String Array
+ */
+-(NSArray *) getUsableDirectionPointFromLayerRect:(CGRect) layerRect
+{
+    
+    NSMutableArray *arUasblePoints = [[[NSMutableArray alloc] init] autorelease];
+    
+    float centX = layerRect.origin.x + layerRect.size.width/2.0;
+    float centY = layerRect.origin.y + layerRect.size.height/2.0;
+    
+    //上中
+    CGPoint upCt = CGPointMake(centX, layerRect.origin.y);
+    
+    //右中
+    CGPoint rightCt = CGPointMake(layerRect.origin.x+layerRect.size.width, centY);
+    
+    //下中
+    CGPoint downCt = CGPointMake(centX, layerRect.origin.y+layerRect.size.height);
+    
+    //左中
+    CGPoint leftCt = CGPointMake(layerRect.origin.x, centY);
+    
+    int x,y;
+    x=y=0;
+    
+    CGPoint dict4Points[]={upCt,rightCt,downCt,leftCt};
+    for (int i=0; i<4; i++) {
+        CGPoint pt = dict4Points[i];
+        
+        //1 计算该点所在的二维数组坐标位置
+        x = pt.x/TilingSize; //横标
+        y = pt.y/TilingSize; //纵标
+        
+        //2 排除4个方向点块中， 某个点块周围都是墙的点。
+        int addx = x+1;
+        int addy = y+1;
+        int subx = x-1;
+        int suby = y-1;
+        
+        if (addx < AST_WIDE) {
+            if (nodeMap[y][addx]=='.') {
+                [arUasblePoints addObject:NSStringFromCGPoint(pt)];
+                continue;
+            }
+        }
+        
+        if (addy < AST_LENGTH) {
+            if (nodeMap[addy][x]=='.') {
+                [arUasblePoints addObject:NSStringFromCGPoint(pt)];
+                continue;
+            }
+        }
+        
+        if (subx >= 0) {
+            if (nodeMap[y][subx]=='.') {
+                [arUasblePoints addObject:NSStringFromCGPoint(pt)];
+                continue;
+            }
+        }
+        
+        if (suby >= 0) {
+            if (nodeMap[suby][x]=='.') {
+                [arUasblePoints addObject:NSStringFromCGPoint(pt)];
+                continue;
+            }
+        }
+    }
+    
+    return arUasblePoints;
+}
+
+/*!
+ 分析并设置起点和终点最优的二维坐标点
+ @param   <#par#> <#info#>
+ @return  int  0=>All OK  1=>未能设置到起点  2=>未能设置到终点
+ */
+-(int) analysisBestPortForBeginEleID:(NSString*)beginEleID EndEleID:(NSString*)endEleID
+{
+    CALayer *startLayer = [self.svgTool getRectLayerByID:beginEleID];
+    CALayer *endLayer   = [self.svgTool getRectLayerByID:endEleID];
+    
+    startLayer.borderColor = [UIColor blueColor].CGColor;
+    startLayer.borderWidth = 4;
+    
+    endLayer.borderColor   = [UIColor blueColor].CGColor;
+    endLayer.borderWidth = 4;
+    
+    CGRect startRect = startLayer.frame;
+    CGRect endRect   = endLayer.frame;
+    
+    //1 获取起点、终点图形所有可设置的方向点。
+    
+    NSArray *usableP = [self getUsableDirectionPointFromLayerRect:startRect];
+    if (usableP.count>0) {
+        CGPoint startPoint = CGPointFromString(usableP[0]);
+        int x = startPoint.x / TilingSize;
+        int y = startPoint.y / TilingSize;
+        
+        //起点
+        nodeMap[y][x] = 's';
+    }
+    else
+    {
+        return 1;
+    }
+    
+    NSArray *usablePd = [self getUsableDirectionPointFromLayerRect:endRect];
+    if (usablePd.count>0) {
+        CGPoint endPoint = CGPointFromString(usablePd[0]);
+        int x = endPoint.x / TilingSize;
+        int y = endPoint.y / TilingSize;
+        
+        //起点
+        nodeMap[y][x] = 'd';
+    }
+    else
+    {
+        return 2;
+    }
+    
+    //2 对比剩余的点，选择起点终中点间最相近的方向点
+    
+    //3 将选择出的两个点进行标识位设置
+    
+    //4 返回
+    
+    return 0;
 }
 
 -(void) showPathWithBeginEleID:(NSString*)beginEleID EndEleID:(NSString*)endEleID
 {
+    
     [self initSVGToTilingArray];
     //CGRect
     
+    [self analysisBestPortForBeginEleID:beginEleID EndEleID:endEleID];
+    
+    //启动查找算法
+    //c版本
+    OpenList *sopenList   = malloc(sizeof(OpenList));
+    sopenList->next = NULL;
+    sopenList->opennode =NULL;
+    
+    CloseList *scloseList = malloc(sizeof(CloseList));
+    scloseList->next = NULL;
+    scloseList->closenode=NULL;
+    
+    SetFactNodeMapSize(AST_WIDE, AST_LENGTH);
+    InitNodeMap(nodeMap, sopenList);
+    
+    BOOL isSuc=YES;
+    NSMutableArray *arPathNodePoints = [[[NSMutableArray alloc] init] autorelease];
+    
+    if((isSuc=FindDestinnation(sopenList, scloseList)))
+    {
+        TNode tempnode = m_node[endpoint_y][endpoint_x];
+        
+        if (tempnode.parent==NULL) {
+            
+           // NSLog(@"查找失败");
+            isSuc = NO;
+        }
+        else{
+            while(tempnode.parent!=NULL && tempnode.flag!=STARTPOINT )
+            {
+                
+                /*
+                 if (tempnode.flag!=DESTINATION) {
+                 //continue;
+                 
+                 //UIView *subView = self.nodeViewMap[tempnode.location_y][tempnode.location_x];
+                 //subView.backgroundColor = [UIColor redColor];
+                 }*/
+                
+                [arPathNodePoints addObject:self.nodeRectMap[tempnode.location_y][tempnode.location_x]];
+                
+                NSLog(@"x: %d , y:%d",tempnode.location_x,tempnode.location_y);
+                
+                tempnode = *tempnode.parent;
+            }
+            
+            //加入起点
+            [arPathNodePoints addObject:self.nodeRectMap[tempnode.location_y][tempnode.location_x]];
+        }
+    }
+    
+    if (isSuc) {
+        [self displayPathOnLayerForNodeRects:arPathNodePoints];
+    }
+    else{
+        //失败!
+        
+        NSLog(@"寻路失败!.");
+    }
 }
 @end

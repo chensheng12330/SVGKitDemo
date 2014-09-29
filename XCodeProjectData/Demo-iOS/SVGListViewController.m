@@ -410,7 +410,7 @@ static MKNetworkEngineEx *mkEngineEx;
 
 - (IBAction)btnDownload:(UIButton *)sender {
     
-    [self.curVC showPathWithBeginEleID:@"_x32_" EndEleID:@"_x36_"];
+    [self.curVC showPathWithBeginEleID:@"_x32_" EndEleID:@"_x39__7_"];
     
     return;
     

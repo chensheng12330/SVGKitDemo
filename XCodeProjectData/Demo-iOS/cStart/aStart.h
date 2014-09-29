@@ -4,7 +4,7 @@
 #define ALGORITHMS_H
 // CAlgorithms
 
-enum{WIDE=40,LENGTH=40};//定义数组最大范围值大小
+enum{WIDE=1000,LENGTH=1000};//定义数组最大范围值大小
 enum{VIABLE, WALL, INOPEN, INCLOSE, STARTPOINT, DESTINATION};
 
 //定义数组实际内容大小

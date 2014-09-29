@@ -14,7 +14,7 @@
 <rect tagId="_x37_" x="129.059" y="138.941" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="79.081" height="70.504"/>
 <rect tagId="_x38_" x="213.059" y="138.941" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="79.081" height="70.504"/>
 <rect tagId="_x39_" x="297.6" y="138.941" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="79.081" height="70.504"/>
-<rect tagId="_x31_" x="382.059" y="138.941" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="79.081" height="70.504"/>
+<rect tagId="_x41_" x="382.059" y="138.941" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="79.081" height="70.504"/>
 
 <text tagId="_x31_" transform="matrix(1.0333 0 0 1 70.1409 110.5227)" font-family="'SimSun'" font-size="15">山竹</text>
 <text tagId="_x32_" transform="matrix(1.0333 0 0 1 151.1409 110.5227)" font-family="'SimSun'" font-size="15">山莓</text>
@@ -25,7 +25,7 @@
 <text tagId="_x37_" transform="matrix(1.0333 0 0 1 143.1409 194.1926)" font-family="'SimSun'" font-size="15">火龙果</text>
 <text tagId="_x38_" transform="matrix(1.0333 0 0 1 229.1409 194.1926)" font-family="'SimSun'" font-size="15">金星果</text>
 <text tagId="_x39_" transform="matrix(1.0333 0 0 1 306.1414 194.1926)" font-family="'SimSun'" font-size="15">白水苹果</text>
-<text tagId="_x31_" transform="matrix(1.0333 0 0 1 390.1414 194.1926)" font-family="'SimSun'" font-size="15">富士苹果</text>
+<text tagId="_x41_" transform="matrix(1.0333 0 0 1 390.1414 194.1926)" font-family="'SimSun'" font-size="15">富士苹果</text>
 
 <rect tagId="_x31__3_" x="46.059" y="268.649" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="79.081" height="70.504"/>
 <rect tagId="_x32__3_" x="129.059" y="268.649" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="79.081" height="70.504"/>
