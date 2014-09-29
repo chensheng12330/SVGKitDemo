@@ -26,7 +26,7 @@
 
 
 
-@interface SVGListViewController : UIViewController<QCSlideSwitchViewDelegate,UIActionSheetDelegate>
+@interface SVGListViewController : UIViewController<QCSlideSwitchViewDelegate,UIActionSheetDelegate,UITextFieldDelegate>
 
 @property (retain, nonatomic) IBOutlet UIView *ecpSlideView;
 
@@ -40,6 +40,11 @@
 ///
 @property (nonatomic, readonly) NSDictionary *cacheVCS;  //视图层缓存
 @property (nonatomic, readonly) NSMutableArray *subVCS;  //展示视图缓存
+
+//路径导航UI
+@property (retain, nonatomic) IBOutlet UITextField *tfStartID;
+@property (retain, nonatomic) IBOutlet UITextField *tfEndID;
+
 
 //重载数据
 -(void) reloadSlideSwitchView;

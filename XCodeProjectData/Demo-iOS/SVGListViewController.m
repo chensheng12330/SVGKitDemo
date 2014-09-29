@@ -51,6 +51,8 @@ static MKNetworkEngineEx *mkEngineEx;
     
     self.areaId = nil;
     //[mkEngineEx release];
+    [_tfStartID release];
+    [_tfEndID release];
     [super dealloc];
     return;
 }
@@ -240,6 +242,8 @@ static MKNetworkEngineEx *mkEngineEx;
 
 - (void) viewDidUnload
 {
+    [self setTfStartID:nil];
+    [self setTfEndID:nil];
     [super viewDidUnload];
 }
 
@@ -410,7 +414,17 @@ static MKNetworkEngineEx *mkEngineEx;
 
 - (IBAction)btnDownload:(UIButton *)sender {
     
-    [self.curVC showPathWithBeginEleID:@"_x32_" EndEleID:@"_x39__7_"];
+    //@"_x31_"
+    //@"_x31_0_7_"
+    
+    if ([self.tfEndID.text isEqualToString:@""] || [self.tfStartID.text isEqualToString:@""] ) {
+        SH_Alert(@"请先设置起点、终点ID值.");
+        
+        //[[[[UIAlertView alloc] initWithTitle:@"温馨提示" message: delegate:nil cancelButtonTitle:@"知道了" otherButtonTitles:nil] autorelease] show];
+    }
+    
+    //[self.curVC showTapLayerForListID:@[self.tfEndID.text,self.tfStartID.text]];
+    [self.curVC showPathWithBeginEleID:self.tfStartID.text EndEleID:self.tfEndID.text];
     
     return;
     
@@ -537,4 +551,11 @@ static MKNetworkEngineEx *mkEngineEx;
     
 }
 
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField
+{
+    [textField resignFirstResponder];
+    
+    return YES;
+}
 @end

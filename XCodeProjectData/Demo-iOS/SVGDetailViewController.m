@@ -21,6 +21,8 @@
 
 @property (nonatomic, retain) SHTapView *tapLayer;
 
+@property (nonatomic, retain) CAShapeLayer *pathLayer;
+
 @property (nonatomic, retain) UITapGestureRecognizer* tapGestureRecognizer;
 
 @property (nonatomic, retain) NSMutableArray *arTapLayers;
@@ -91,6 +93,7 @@
 
     
     self.nodeRectMap = nil;
+    self.pathLayer   = nil;
     
 	[super dealloc];
 }
@@ -932,7 +935,6 @@ char nodeMap[LENGTH][WIDE]; //[1][2]
  */
 -(void) displayPathOnLayerForNodeRects:(NSArray*) nodeRects
 {
-    
     //画布大小
     float canvasWidth  = self.contentView.frame.size.width;
     float canvasHeight = self.contentView.frame.size.height;
@@ -1002,24 +1004,24 @@ char nodeMap[LENGTH][WIDE]; //[1][2]
     //[findPath fill];
     //[findPath stroke];
     
-    CAShapeLayer *mainPath = [CAShapeLayer layer];
-    [mainPath setFrame:self.contentView.layer.frame];
+    self.pathLayer = [CAShapeLayer layer];
+    [self.pathLayer setFrame:self.contentView.layer.frame];
     
-    mainPath.path = findPath.CGPath;
-    mainPath.fillColor = [UIColor clearColor].CGColor;
-    mainPath.lineWidth =  5;
-    mainPath.strokeColor = [UIColor redColor].CGColor;
+    self.pathLayer.path = findPath.CGPath;
+    self.pathLayer.fillColor = [UIColor clearColor].CGColor;
+    self.pathLayer.lineWidth =  5;
+    self.pathLayer.strokeColor = [UIColor redColor].CGColor;
     
     
     //属性copy
     CALayer *beLayer = subLayer;
     
-    mainPath.transform          = beLayer.transform;
-    mainPath.contentsScale      = beLayer.contentsScale;
-    mainPath.rasterizationScale = beLayer.rasterizationScale;
+    self.pathLayer.transform          = beLayer.transform;
+    self.pathLayer.contentsScale      = beLayer.contentsScale;
+    self.pathLayer.rasterizationScale = beLayer.rasterizationScale;
     
     
-    [self.contentView.layer addSublayer:mainPath];
+    [self.contentView.layer addSublayer:self.pathLayer];
     
     NSLog(@"canW: %f  canH: %f ",canvasWidth,canvasHeight);
     NSLog(@"canvasFrame: %@",NSStringFromCGRect(self.contentView.frame));
@@ -1039,7 +1041,7 @@ char nodeMap[LENGTH][WIDE]; //[1][2]
  */
 -(NSArray *) getUsableDirectionPointFromLayerRect:(CGRect) layerRect
 {
-    
+
     NSMutableArray *arUasblePoints = [[[NSMutableArray alloc] init] autorelease];
     
     float centX = layerRect.origin.x + layerRect.size.width/2.0;
@@ -1111,53 +1113,111 @@ char nodeMap[LENGTH][WIDE]; //[1][2]
  @param   <#par#> <#info#>
  @return  int  0=>All OK  1=>未能设置到起点  2=>未能设置到终点
  */
+
 -(int) analysisBestPortForBeginEleID:(NSString*)beginEleID EndEleID:(NSString*)endEleID
 {
     CALayer *startLayer = [self.svgTool getRectLayerByID:beginEleID];
-    CALayer *endLayer   = [self.svgTool getRectLayerByID:endEleID];
+    if (startLayer==NULL) {
+        return 1;
+    }
     
+    CALayer *endLayer   = [self.svgTool getRectLayerByID:endEleID];
+    if (endLayer==NULL) {
+        return 2;
+    }
+    
+    /*
     startLayer.borderColor = [UIColor blueColor].CGColor;
     startLayer.borderWidth = 4;
     
     endLayer.borderColor   = [UIColor blueColor].CGColor;
     endLayer.borderWidth = 4;
+    */
+    
     
     CGRect startRect = startLayer.frame;
     CGRect endRect   = endLayer.frame;
     
+    
+    
     //1 获取起点、终点图形所有可设置的方向点。
     
     NSArray *usableP = [self getUsableDirectionPointFromLayerRect:startRect];
-    if (usableP.count>0) {
-        CGPoint startPoint = CGPointFromString(usableP[0]);
-        int x = startPoint.x / TilingSize;
-        int y = startPoint.y / TilingSize;
-        
-        //起点
-        nodeMap[y][x] = 's';
-    }
-    else
-    {
+    if (usableP.count==0) {
         return 1;
     }
     
     NSArray *usablePd = [self getUsableDirectionPointFromLayerRect:endRect];
-    if (usablePd.count>0) {
-        CGPoint endPoint = CGPointFromString(usablePd[0]);
-        int x = endPoint.x / TilingSize;
-        int y = endPoint.y / TilingSize;
-        
-        //起点
-        nodeMap[y][x] = 'd';
-    }
-    else
-    {
+    if (usablePd.count==0) {
         return 2;
     }
-    
+
     //2 对比剩余的点，选择起点终中点间最相近的方向点
+    typedef   struct MinDist_I_J
+    {
+        int i;
+        int j;
+    } MinDist_I_J;
+    
+    MinDist_I_J minDist_I_J={-1,-1};
+
+    for (int i=0;i<usableP.count; i++) {
+        
+        NSString *strStartP = usableP[i];
+        CGPoint startPt = CGPointFromString(strStartP);
+        
+        unsigned int minDist = INT_MAX;
+        int jIndex=0;
+        
+        for (int j=0; j<usablePd.count; j++) {
+            NSString *strEndP = usablePd[j];
+            CGPoint endPt = CGPointFromString(strEndP);
+            
+            unsigned int tempDist = DistanceManhattan(startPt.x,startPt.y,endPt.x,endPt.y);
+            if (minDist>tempDist) {
+                minDist = tempDist;
+                jIndex = j;
+            }
+        }
+        
+        if (minDist_I_J.i==-1) {
+            minDist_I_J.i = i;
+            minDist_I_J.j = jIndex;
+        }
+        else
+        {
+            //对比当前与上次查询
+            
+            //当前
+            
+            //上次 - minDist_I_J
+            CGPoint comstartPt = CGPointFromString(usableP[minDist_I_J.i]);
+            CGPoint comendPt   = CGPointFromString(usablePd[minDist_I_J.j]);
+            unsigned int compDist = DistanceManhattan(comstartPt.x,comstartPt.y,comendPt.x,comendPt.y);
+            if (minDist > compDist) {
+                minDist_I_J.i = i;
+                minDist_I_J.j = jIndex;
+            }
+        }
+    }
+    
+    CGPoint startPoint = CGPointFromString(usableP[minDist_I_J.i]);
+    int x = startPoint.x / TilingSize;
+    int y = startPoint.y / TilingSize;
     
     //3 将选择出的两个点进行标识位设置
+    
+    //起点
+    nodeMap[y][x] = 's';
+    
+    //
+    
+    CGPoint endPoint = CGPointFromString(usablePd[minDist_I_J.j]);
+    x = endPoint.x / TilingSize;
+    y = endPoint.y / TilingSize;
+    
+    //起点
+    nodeMap[y][x] = 'd';
     
     //4 返回
     
@@ -1167,10 +1227,28 @@ char nodeMap[LENGTH][WIDE]; //[1][2]
 -(void) showPathWithBeginEleID:(NSString*)beginEleID EndEleID:(NSString*)endEleID
 {
     
+    //清空之前的查询记录.
+    [self clearTapLayer:nil];
+    [self.pathLayer removeFromSuperlayer];
+    self.pathLayer = nil;
+    
+    
+    [self showTapLayerForListID:@[beginEleID,endEleID]];
+    //重新初使化数据结构信息
+    
     [self initSVGToTilingArray];
     //CGRect
     
-    [self analysisBestPortForBeginEleID:beginEleID EndEleID:endEleID];
+    int retuVal = [self analysisBestPortForBeginEleID:beginEleID EndEleID:endEleID];
+    if (retuVal==1) {
+        SH_Alert(@"路径规化失败，未能找到[起点]的可用路径信息.");
+        return;
+    }
+    else if (retuVal==2)
+    {
+        SH_Alert(@"路径规化失败，未能找到[终点]的可用路径信息.");
+        return;
+    }
     
     //启动查找算法
     //c版本
@@ -1221,13 +1299,42 @@ char nodeMap[LENGTH][WIDE]; //[1][2]
         }
     }
     
+    
+    //显示路径
     if (isSuc) {
         [self displayPathOnLayerForNodeRects:arPathNodePoints];
     }
     else{
         //失败!
-        
-        NSLog(@"寻路失败!.");
+        SH_Alert(@"寻路失败! 未能找到起点与终点间可用的通行路径.");
+        NSLog(@"寻路失败! 未能找到起点与终点间可用的通行路径.");
     }
+    
+    //释放相关的内存
+    /*
+    while (sopenList!=nil) {
+        TNode *temp = sopenList->opennode;
+        if (temp!=NULL) {
+            //free(temp);
+            sopenList->opennode = nil;
+        }
+        OpenList *tempOpen = sopenList->next;
+        free(sopenList);
+        sopenList = tempOpen;
+    }
+    
+    while (scloseList!=nil) {
+        TNode *temp = scloseList->closenode;
+        if (temp!=NULL) {
+            //free(temp);
+            scloseList->closenode = nil;
+        }
+        CloseList *tempOpen = scloseList->next;
+        free(scloseList);
+        scloseList = tempOpen;
+    }
+     */
+    //TNode relsNode=
+    
 }
 @end
