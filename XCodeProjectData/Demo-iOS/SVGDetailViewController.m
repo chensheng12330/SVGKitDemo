@@ -21,7 +21,7 @@
 
 @property (nonatomic, retain) SHTapView *tapLayer;
 
-@property (nonatomic, retain) CAShapeLayer *pathLayer;
+
 
 @property (nonatomic, retain) UITapGestureRecognizer* tapGestureRecognizer;
 
@@ -33,6 +33,12 @@
 - (void)loadResource:(NSString *)name;
 
 @property (nonatomic, assign) NSInteger eatTime;
+
+
+//Path Find Model
+@property (nonatomic, retain) CAShapeLayer *pathLayer;
+@property (nonatomic, retain) CALayer *startImageIcon;
+@property (nonatomic,retain)  CALayer *endImageIcon;
 
 @end
 
@@ -691,6 +697,8 @@
     }
     
     if (lopView) {
+        
+        /*
         UIImage* image = [UIImage imageWithContentsOfFile:[MDMXIB pathForResource:@"svg_mark" ofType:@"png"]];
         CGRect drawRect = lopView.frame;
         CGRect frame = CGRectMake( drawRect.size.width/4.0, (drawRect.size.height-7)/4.0, drawRect.size.width/2.0, (drawRect.size.height+7)/2.0);
@@ -700,7 +708,7 @@
         [tipIcon setImage:image];
         [lopView addSubview:tipIcon];
         [tipIcon release];
-        
+        */
         //CGRect fram = self.scrollViewForSVG.frame;
         
         //计算偏移
@@ -933,7 +941,7 @@ char nodeMap[LENGTH][WIDE]; //[1][2]
  @param   <#par#> <#info#>
  @return  <#return#>
  */
--(void) displayPathOnLayerForNodeRects:(NSArray*) nodeRects
+-(void) displayPathOnLayerForNodeRects:(NSArray*) nodeRects SLayer:(CALayer*) sLayer ELayer:(CALayer*) eLayer
 {
     //画布大小
     float canvasWidth  = self.contentView.frame.size.width;
@@ -1026,7 +1034,42 @@ char nodeMap[LENGTH][WIDE]; //[1][2]
     NSLog(@"canW: %f  canH: %f ",canvasWidth,canvasHeight);
     NSLog(@"canvasFrame: %@",NSStringFromCGRect(self.contentView.frame));
     
+    
+    
+    
+    
+    //显示起点、终点
+    if (self.startImageIcon!=NULL) {
+        [self.startImageIcon removeFromSuperlayer];
+    }
+    if (self.endImageIcon!=NULL) {
+        [self.endImageIcon removeFromSuperlayer];
+    }
+    
+    
+    /*
+    float pxWidth = 23;
+    float pxHeight= 35;
+    
+    float pxVal = sLayer.frame.size.height/pxHeight;
+    pxWidth = pxWidth*pxVal;
+    */
+     
+    UIImage* STimage = [UIImage imageWithContentsOfFile:[MDMXIB pathForResource:@"svg_nav_start" ofType:@"png"]];
+    self.startImageIcon = [CALayer layer];
+    self.startImageIcon.frame = CGRectMake(2, -8, 19, 30);
+    self.startImageIcon.contents = (id) STimage.CGImage;
+    [sLayer addSublayer:self.startImageIcon];
+    
+    UIImage* EDimage = [UIImage imageWithContentsOfFile:[MDMXIB pathForResource:@"svg_nav_end" ofType:@"png"]];
+    self.endImageIcon = [CALayer layer];
+    self.endImageIcon.frame = CGRectMake(2, -8, 19, 30);
+    self.endImageIcon.contents = (id) EDimage.CGImage;
+    [eLayer addSublayer:self.endImageIcon];
+    
     [self.contentView setNeedsDisplay];
+    
+    return;
 }
 
 // 获取可用方向瓦片
@@ -1114,14 +1157,15 @@ char nodeMap[LENGTH][WIDE]; //[1][2]
  @return  int  0=>All OK  1=>未能设置到起点  2=>未能设置到终点
  */
 
--(int) analysisBestPortForBeginEleID:(NSString*)beginEleID EndEleID:(NSString*)endEleID
+-(int) analysisBestPortForBeginEleID:(CALayer*)startLayer EndEleID:(CALayer*)endLayer
 {
-    CALayer *startLayer = [self.svgTool getRectLayerByID:beginEleID];
+    
+    //CALayer *startLayer = [self.svgTool getRectLayerByID:beginEleID];
     if (startLayer==NULL) {
         return 1;
     }
     
-    CALayer *endLayer   = [self.svgTool getRectLayerByID:endEleID];
+    //CALayer *endLayer   = [self.svgTool getRectLayerByID:endEleID];
     if (endLayer==NULL) {
         return 2;
     }
@@ -1233,13 +1277,23 @@ char nodeMap[LENGTH][WIDE]; //[1][2]
     self.pathLayer = nil;
     
     
-    [self showTapLayerForListID:@[beginEleID,endEleID]];
+    [self showTapLayerForListID:@[endEleID,beginEleID]];
     //重新初使化数据结构信息
     
     [self initSVGToTilingArray];
     //CGRect
     
-    int retuVal = [self analysisBestPortForBeginEleID:beginEleID EndEleID:endEleID];
+    
+    CALayer *startLayer = [self.svgTool getRectLayerByID:beginEleID];
+    if (startLayer==NULL) {
+  
+    }
+    
+    CALayer *endLayer   = [self.svgTool getRectLayerByID:endEleID];
+    if (endLayer==NULL) {
+    }
+    
+    int retuVal = [self analysisBestPortForBeginEleID:startLayer EndEleID:endLayer];
     if (retuVal==1) {
         SH_Alert(@"路径规化失败，未能找到[起点]的可用路径信息.");
         return;
@@ -1302,7 +1356,7 @@ char nodeMap[LENGTH][WIDE]; //[1][2]
     
     //显示路径
     if (isSuc) {
-        [self displayPathOnLayerForNodeRects:arPathNodePoints];
+        [self displayPathOnLayerForNodeRects:arPathNodePoints SLayer:startLayer ELayer:endLayer];
     }
     else{
         //失败!

@@ -34,7 +34,7 @@
         [self.sampleNames addObject:@"Nested"];
         [self.sampleNames addObject:@"Skew"];
          */
-        self.sampleNames = [NSMutableArray arrayWithObjects:@"test1",@"5号展厅",@"5号展厅",@"5号展厅",@"5号展厅",@"5号展厅",@"fruit_map",nil];
+        self.sampleNames = [NSMutableArray arrayWithObjects:@"路径导航测试",@"5号展厅",@"5号展厅",@"5号展厅",@"5号展厅",@"5号展厅",@"fruit_map",nil];
         
         self.arDesc      = [NSArray arrayWithObjects:@"=>基本数据显示测试",@"=>SVG大数据显示测试", @"=>SVG搜索测试",nil];
         
@@ -111,11 +111,11 @@
     
     SVGListViewController *svgList = [[[SVGListViewController alloc] init] autorelease];
     
-    //NSArray *arData = @[@{@"mapid":@"1",@"name":@"一号馆",@"url":@"http://115.28.107.61:8075/img//201407/2218481403oo.svg"},@{@"mapid":@"2",@"name":@"二号馆",@"url":@"http://115.28.107.61:8075/img//201407/221703417d61.svg"}];
+    NSArray *arData = @[@{@"mapid":@"1",@"name":@"一号馆",@"url":@"http://115.28.107.61:8075/img/201407/2218481403oo.svg"},@{@"mapid":@"2",@"name":@"二号馆",@"url":@"http://115.28.107.61:8075/img/201407/221703417d61.svg"}];
     
-    NSString *strPath = [[NSBundle mainBundle] pathForResource:@"fruit_map" ofType:@"svg"];
+    //NSString *strPath = [[NSBundle mainBundle] pathForResource:@"fruit_map" ofType:@"svg"];
     
-    NSArray *arData = @[@{@"mapid":@"1",@"name":@"一号馆",@"url":strPath}];
+    //NSArray *arData = @[@{@"mapid":@"1",@"name":@"一号馆",@"url":strPath}];
     
     [svgList setSvgMapData:arData];
     

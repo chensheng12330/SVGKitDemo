@@ -175,6 +175,12 @@ static MKNetworkEngineEx *mkEngineEx;
     [btnFull addTarget:self action:@selector(goToFullImage) forControlEvents:(1<<6)];
     
     [self.view addSubview:btnFull];
+    
+    
+    //*********
+    [self showMapForMapID:@"1"];
+    
+    ////
     return;
 }
 
@@ -395,6 +401,10 @@ static MKNetworkEngineEx *mkEngineEx;
 
 - (IBAction)btnBack:(UIButton *)sender {
 
+    [self.navigationController popViewControllerAnimated:YES];
+    
+    return;
+    
     [self.view removeFromSuperview];
     
     if (self.delegate) {
@@ -418,8 +428,8 @@ static MKNetworkEngineEx *mkEngineEx;
     //@"_x31_0_7_"
     
     if ([self.tfEndID.text isEqualToString:@""] || [self.tfStartID.text isEqualToString:@""] ) {
-        SH_Alert(@"请先设置起点、终点ID值.");
-        
+        SH_Alert(@"请先设置起点、终点的展位号值.");
+        return;
         //[[[[UIAlertView alloc] initWithTitle:@"温馨提示" message: delegate:nil cancelButtonTitle:@"知道了" otherButtonTitles:nil] autorelease] show];
     }
     
